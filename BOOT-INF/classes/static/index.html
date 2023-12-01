@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Tram Routes</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        table {
+            border-collapse: collapse;
+            width: 50%;
+            margin-bottom: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        form {
+            margin-bottom: 20px;
+        }
+        input[type="text"], input[type="submit"] {
+            padding: 6px;
+            margin-right: 10px;
+        }
+        .error {
+            color: red;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+<h1>Tram Routes</h1>
+
+<form id="createForm">
+    <input type="text" id="code" placeholder="Code">
+    <input type="text" id="name" placeholder="Name">
+    <input type="submit" value="Create Route">
+    <span id="errorCreate" class="error"></span>
+
+</form>
+
+<button onclick="fetchRoutes()">Get All Routes</button>
+<button onclick="updateRoute()">Update Route</button>
+<input type="text" id="routeId" placeholder="Route ID">
+<table id="routesTable">
+    <thead>
+    <tr>
+        <th>ID</th>
+        <th>Code</th>
+        <th>Name</th>
+    </tr>
+    </thead>
+    <tbody id="routesBody"></tbody>
+
+</table>
+
+
+<script>
+
+        const routesTable = document.getElementById('routesBody');
+
+        function fetchRoutes() {
+            fetch('/trams')
+                .then(response => response.json())
+                .then(routes => {
+                    routesTable.innerHTML = '';
+                    routes.forEach(route => {
+                        const row = `<tr>
+                            <td>${route.id}</td>
+                            <td>${route.code}</td>
+                            <td>${route.name}</td>
+                        </tr>`;
+                        routesTable.insertAdjacentHTML('beforeend', row);
+                    });
+                })
+                .catch(error => console.error('Error:', error));
+        }
+
+        document.getElementById('createForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const code = document.getElementById('code').value;
+            const name = document.getElementById('name').value;
+
+            fetch('/trams', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ code, name })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Created route ID:', data);
+                fetchRoutes();
+            })
+            .catch(error => console.error('Error:', error));
+        });
+
+
+        fetchRoutes();
+
+        function deleteRoute(id) {
+            fetch(`/trams/${id}`, {
+                method: 'DELETE'
+            })
+            .then(response => {
+                if (response.ok) {
+                    console.log(`Route with ID ${id} deleted`);
+                    fetchRoutes();
+                } else {
+                    console.error('Error deleting route');
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+
+
+        function createDeleteButton(id) {
+            const button = document.createElement('button');
+            button.textContent = 'Delete';
+            button.onclick = function() {
+                if (confirm('Are you sure you want to delete this route?')) {
+                    deleteRoute(id);
+                      fetchRoutes();
+                }
+            };
+            return button;
+        }
+
+
+        function fetchRoutes() {
+            fetch('/trams')
+                .then(response => response.json())
+                .then(routes => {
+                const routesTable = document.getElementById('routesTable');
+
+                    routesTable.innerHTML = '';
+                    routes.forEach(route => {
+                        const row = `<tr>
+                            <td>${route.id}</td>
+                            <td>${route.code}</td>
+                            <td>${route.name}</td>
+                            <td><button onclick="deleteRoute(${route.id})">Delete</button></td>
+                        </tr>`;
+                        routesTable.insertAdjacentHTML('beforeend', row);
+                    });
+                })
+                .catch(error => console.error('Error:', error));
+        }
+
+
+<!--        function updateRoute(id) {-->
+<!--            const updatedCode = prompt('Enter updated code:');-->
+<!--            const updatedName = prompt('Enter updated name:');-->
+
+<!--            fetch(`/trams/${id}`, {-->
+<!--                method: 'PUT',-->
+<!--                headers: {-->
+<!--                    'Content-Type': 'application/json'-->
+<!--                },-->
+<!--                body: JSON.stringify({ code: updatedCode, name: updatedName })-->
+<!--            })-->
+<!--            .then(response => {-->
+<!--                if (response.ok) {-->
+<!--                    console.log(`Route with ID ${id} updated`);-->
+<!--                    fetchRoutes();-->
+<!--                } else {-->
+<!--                    console.error('Error updating route');-->
+<!--                }-->
+<!--            })-->
+<!--            .catch(error => console.error('Error:', error));-->
+<!--        }-->
+
+        function showErrorNearButton(message) {
+            const errorSpan = document.getElementById('errorCreate');
+            errorSpan.textContent = message;
+            errorSpan.style.display = 'inline';
+        }
+
+        document.getElementById('createForm').addEventListener('submit', function(event) {
+            const codeValue = document.getElementById('code').value.trim();
+            const nameValue = document.getElementById('name').value.trim();
+
+            if (!codeValue || !nameValue) {
+                showErrorNearButton('Code and Name are required!');
+                event.preventDefault();
+            } else {
+
+                const errorSpan = document.getElementById('errorCreate');
+                errorSpan.textContent = '';
+                errorSpan.style.display = 'none';
+            }
+        });
+        function updateRoute() {
+             const routeId = document.getElementById('routeId').value;
+            const codeValue = document.getElementById('code').value;
+            const nameValue = document.getElementById('name').value;
+
+            fetch(`http://localhost:8080/trams/${routeId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ code: codeValue, name: nameValue })
+            })
+            .then(response => {
+                if (response.ok) {
+                    console.log('Route updated successfully');
+                fetchRoutes();
+                } else {
+                    console.error('Failed to update route');
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+
+    </script>
+</body>
+</html>
